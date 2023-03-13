@@ -1,5 +1,12 @@
 # DevZones-Damage
- x damage per x seconds
+
+### EN
+The player in the zone you set will be damaged.
+
+### TR
+Belirlediğiniz bölgedeki oyuncu zarar görecektir.
+
+dmg = zone name
  
-# DevZones
+## Required(Gereken): DevZones
 https://github.com/Franc1sco/DevZones

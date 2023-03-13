@@ -1,78 +1,53 @@
-// ------ #include ------ //
-
 #include <sourcemod>
 #include <devzones>
-#include <multicolors>
-#include <sdkhooks>
-
-// ------ Handle ------ //
-
-Handle Handle_Damage_T [MAXPLAYERS + 1];
-
-// ------ ConVar ------ //
-
-ConVar ConVar_Damage_Timer, ConVar_Damage;
-
-// ------ #pragma ------ //
 
 #pragma semicolon 1
 #pragma newdecls required
 
-// ------ myinfo ------ //
+ConVar damage, time_damage;
 
 public Plugin myinfo = 
 {
-	name = "SM DEV ZONES - x damage per x seconds",
-	author = "ByDexter",
-	description = "",
-	version = "1.0",
+	name = "SM DEV ZONES - x damage per x seconds", 
+	author = "ByDexter", 
+	description = "", 
+	version = "1.1", 
 	url = "https://steamcommunity.com/id/ByDexterTR/"
 };
 
 public void OnPluginStart()
 {
-	ConVar_Damage_Timer = CreateConVar("sm_timer_damage", "1.0", "Bölgede bulunan oyunculara kaç saniyede hasar vurulsun");
-	ConVar_Damage = CreateConVar("sm_damage", "10", "Bölgede bulunan oyunculara kaç hasar vurulsun");
+	LoadTranslations("devzones_damage.phrases");
+	time_damage = CreateConVar("sm_damage_time", "3.0", "Oyuncular kaç saniye arayla hasar almalı?\nIn how many seconds should players take damage?", 0, true, 0.1);
+	damage = CreateConVar("sm_damage", "10", "Bölgedeki oyunculara ne kadar hasar verilmelidir?\nHow many damage should be dealt to players in the zone?");
 	AutoExecConfig(true, "DevZones-Damage", "ByDexter");
-}
-
-public void OnClientDisconnect(int client)
-{
-	if (Handle_Damage_T[client] != INVALID_HANDLE)
-	{
-		delete Handle_Damage_T[client];
-		Handle_Damage_T[client] = INVALID_HANDLE;
-	}
 }
 
 public void Zone_OnClientEntry(int client, const char[] zone)
 {
-	if(client < 1 || client > MaxClients || !IsClientInGame(client) ||!IsPlayerAlive(client)) 
-		return;
-		
-	if(StrContains(zone, "dmg", false) == 0)
+	if (IsValidClient(client) && StrContains(zone, "dmg", false) != -1)
 	{
-		Handle_Damage_T[client] = CreateTimer(ConVar_Damage_Timer.FloatValue, Timer_Dmg, client, TIMER_REPEAT);
-		CPrintToChat(client, "{darkred}[ByDexter] {green}dmg bölgesine {default}girdiniz.");
+		CreateTimer(time_damage.FloatValue, DealtDamage, client, TIMER_REPEAT | TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
 
-public void Zone_OnClientLeave(int client, const char[] zone)
+public Action DealtDamage(Handle timer, any client)
 {
-	if(StrContains(zone, "dmg", false) == 0)
+	if (!IsValidClient(client) || !Zone_IsClientInZone(client, "dmg"))
 	{
-		if (Handle_Damage_T[client] != INVALID_HANDLE)
-		{
-			delete Handle_Damage_T[client];
-			Handle_Damage_T[client] = INVALID_HANDLE;
-		}
-		CPrintToChat(client, "{darkred}[ByDexter] {green}dmg bölgesinden {default}ayrıldınız.");
+		return Plugin_Stop;
 	}
+	
+	SetEntityHealth(client, GetClientHealth(client) - damage.IntValue);
+	PrintToChat(client, "[SM] %T", "damage", damage.IntValue, time_damage.FloatValue);
+	return Plugin_Continue;
 }
 
-public Action Timer_Dmg(Handle timer, any client)
+bool IsValidClient(int client, bool nobots = true)
 {
-	int HP = GetClientHealth(client);
-	SetEntityHealth(client, HP - ConVar_Damage.IntValue);
-	CPrintToChat(client, "{darkred}[ByDexter] {green}dmg bölgesinde {default}olduğunuz için {darkblue}%d hasar yediniz", ConVar_Damage.IntValue);
-}
+	if (client <= 0 || client > MaxClients || !IsClientConnected(client) || (nobots && IsFakeClient(client)))
+	{
+		return false;
+	}
+	return IsClientInGame(client);
+} 

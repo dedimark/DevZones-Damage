@@ -1,0 +1,9 @@
+"Phrases"
+{
+	"damage"
+	{
+		"#format"   "{1:d}, {2:.1f}" // {2} Time | {1} Damage
+		"en" "if you dont get out of here in {2} seconds, you take {1} damage."
+		"tr" "Buradan {2} saniye içinde çıkmazsan, {1} hasar alırsınız."
+	}
+} 
